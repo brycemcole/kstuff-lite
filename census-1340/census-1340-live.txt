@@ -1,0 +1,30 @@
+
+## 2026-10-19 (cont. 4) — TF-ORACLE COMPLETE, PIVOT VERIFIED
+
+- timeline_1340: no concurrent IDT writer; armed-gate state was stable leftovers
+  from crashed v3.2/v3.3 (changes=1 over 20s). Root causes of prior failures:
+  (1) IST4_TOP/IST6_TOP macros lacked CAVE_RVA -> TSS slots pointed into XOM
+  kernel text (would have frozen console had any int fired); (2) enter179's
+  `add $0x30` should be `add $0x58` (0x30 frame + 0x28 pushes) -> pops/ret
+  garbage -> the marker-4 SIGSEGV. Both fixed; v3.3 rerun: T0 PASS (marker=7),
+  stage0 DORETI_BOUNCE_OK (hw frame cs=0x43 rfl=0x202 ss=0x3b at cave+0x20418),
+  then wedged in stage1 (asm-bootstrap second kernel_copyin implicated).
+- oracle4 (fresh boot, text=0xffffffffc9980000): minimal pivot test, entry
+  frame planted from C, IDT[1] left native. RESULT: ENTRY_FRAME_LANDING_OK +
+  PHASE2_DONE. add_rsp_iret 0x257B36 + ist6 geometry + iretq resume PROVEN.
+  Kernel-GS-at-CPL3 + libc printf confirmed safe on this path.
+- oracle5a (TF, cand=nop_ret 0x255036): full TF oracle chain works. TF traps
+  on the SECOND instruction boundary (x86 suppresses #DB for first insn after
+  iretq sets TF) — off-by-one understood; oracle reports post-first-insn+flow
+  state. nop_ret executed, ret consumed scratch[0], trapped at DORETI target,
+  rsp_delta=0x8.
+- oracle5b (cand=PIVOT 0x25213E): *** VERIFIED *** dbframe rip=cand+4,
+  rfl=0x186 (PF|SF), rsp=scratch+0x28 => `add rsp,0x28`, 4 bytes. Executed
+  cleanly in kernel context. cpu_switch=0x252160 boundary implied.
+- Verified gadget set on 13.40: ADD_RSP_IRET 0x257B36, DORETI_IRET 0x257B3D
+  (proven via fall-through), NOP_RET 0x255036, PIVOT 0x25213E.
+- Wrote 13_40.h (verified vs unproven entries). Console left clean (db_landing
+  disarmed gates + restored TSS; DB_DONE).
+- NEXT: assemble 13.40 Byepervisor handoff using verified gadgets + DATA_CAVE
+  scratch + kernel_pmap offsets; then Linux boot (ubuntu image on Mac, USB
+  128GB stick available).
