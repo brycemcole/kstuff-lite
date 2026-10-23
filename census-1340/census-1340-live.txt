@@ -28,3 +28,41 @@
 - NEXT: assemble 13.40 Byepervisor handoff using verified gadgets + DATA_CAVE
   scratch + kernel_pmap offsets; then Linux boot (ubuntu image on Mac, USB
   128GB stick available).
+
+=== 2026-10-19 (cont. 6): Byepervisor-Reborn 13.40 port built ===
+- outputs/upstream-study/Byepervisor-Reborn/ ported + built: byepervisor_reborn.elf (177864B, FreeBSD x86-64, prospero-clang).
+- include/offsets/13_40.h: syms DMPML4I 0x3B29294(live) DMPDPI 0x3B29298(live) PML4PML4I 0x3B27E4C(cand: PMAP_STORE-0x11AC)
+  HV_MP_STARTUP_CALL 0xC0A620(cand: malloc 0xBFC290+0xE390) MP_STARTUP_INIT_VECTOR 0x269FB8(cand:=13.60) PMAP_STORE 0x3B28FF8(live)
+  DATA_CAVE 0x2D29000(live) IDT 0x3B94300(live) TSS 0x3B96FE0(live) HV_HEAP 0x83028 HV_PCPUS 0x82A60; SYS_GETUID/PRINTF/ACPI_SLEEP=0 (unused).
+- Gadget map = 13.60 verbatim (PIVOT 0x25213E + IRETQ 0x257B3D TF-oracle-verified on 13.40; DBREG_RESUME 0x2529D8 = census cpu_switch+0x878 cand; rest unverified same-RVA block).
+- kdlsym.c: +case 0x13400000 x3 (kgadget/kdlsym/rawoff).
+- break_hv_payload/build.sh: darwin branch (clang --target=x86_64-unknown-freebsd, ld.lld, llvm-objcopy, xxd). Regenerated break_hv.h
+  (150B clang build; entry stub byte-identical to upstream 172B gcc build; vmcb_disable_np semantics verified in disasm:
+  dmap - heap precomputed, pcpus loop 16, VMCB+0x90 NP clear, +0xC0 clean=0). Upstream prebuilt kept at break_hv.h.orig.
+- Risk register: HV_MP_STARTUP_CALL wrong -> dormant BP, resume proceeds normally (fails safe); MP_STARTUP_INIT_VECTOR only used as
+  a stored value for the shellcode params (safe-ish); PML4PML4I used by pmap_kextract (unused in this path); 19 unverified gadget
+  RVAs only reached AFTER the #DB hook fires (worst case: resume wedges -> power cycle, same recovery as today).
+- Run sequence: deliver elf -> "[+] Hook installed, enter sleep and resume!" -> user rest mode -> resume -> oracle cookie poll ->
+  "Welcome back, hypervisor is defeated!" -> resend same elf -> "Hypervisor is already compromised" + ktext dump (XOM off).
+
+=== 2026-10-22 — UPSTREAM 13.40 LANDED; EXPLOIT SUCCEEDED ===
+- Upstream EchoStretch/Byepervisor-Reborn commit 768e8a1 (Oct 17) added full
+  13.40 offsets+support; validated against our TF-oracle values 6-for-6:
+  PIVOT 0x25213E, IRETQ 0x257B3D, PMAP_STORE 0x3B28FF8, DATA_CAVE 0x2D29000,
+  HV_MP_STARTUP_CALL 0xC0A620, IDT/TSS layout (their RVAs text-relative:
+  IDT 0x3B94300 / TSS 0x3B96FE0 = ours kdata-relative +0xCB0000).
+- Upstream main does not compile: kdlsym.c switches on g_gadget_map_1200…
+  1342 but only #includes offsets/13_00.h 13_20.h 13_60.h. Fix: add the 8
+  missing includes (12_00 12_02 12_20 12_40 12_60 12_70 13_40 13_42).
+- Built with that fix, delivered over elfldr, rest-mode resume: SUCCESS —
+  re-send prints "Hypervisor is already compromised" + full kernel .text
+  dump (XOM defeated) + HV strings + .text write verified.
+- oracle6-8 verdicts (folded into 13_40.h): wrmsr_ret 0x255034 PASS;
+  pop rax 0x2912A1 / rcx 0x2918B2 / rdi 0x28CE6D PASS; RET_TRAMP 0x252142
+  refuted (not a ret); 0x2912A2 / 0x2A0F7B / 0x291C42 refuted killers;
+  r0gdb DR-gadget RVAs (dr2gpr 0x25234D, gpr2dr 0x252466/0x252559) invalid
+  on 13.40 (console died at DR2GPR despite full register shields).
+- oracle9_1340.c (this dir): upstream-chain verifier — fires their gadget
+  chain on this console, safest first, per-fire fsync; kept for the record.
+- NEXT: harvest the dumped .text for the 13.40 gadget/patch table (kexec
+  Linux handoff; Ubuntu 26.04 USB stick staged — see usb-stick note).

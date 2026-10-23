@@ -40,3 +40,22 @@ oracle5a_1340.elf: oracle5_1340.c
 	$(CC) $(CFLAGS) -DCAND_RVA=0x255036ULL -o $@ $<
 oracle5b_1340.elf: oracle5_1340.c
 	$(CC) $(CFLAGS) -DCAND_RVA=0x25213EULL -o $@ $<
+
+oracle6_1340.elf: oracle6_1340.c
+	$(CC) $(CFLAGS) -o $@ $<
+oracle7_1340.elf: oracle7_1340.c
+	$(CC) $(CFLAGS) -o $@ $<
+oracle7b_1340.elf: oracle7b_1340.c
+	$(CC) $(CFLAGS) -o $@ $<
+oracle7c_1340.elf: oracle7c_1340.c
+	$(CC) $(CFLAGS) -o $@ $<
+oracle8_1340.elf: oracle8_1340.c
+	$(CC) $(CFLAGS) -o $@ $<
+oracle8b_1340.elf: oracle8b_1340.c
+	$(CC) $(CFLAGS) -o $@ $<
+oracle8c_1340.elf: oracle8c_1340.c
+	$(CC) $(CFLAGS) -o $@ $<
+oracle8d_1340.elf: oracle8d_1340.c
+	$(CC) $(CFLAGS) -o $@ $<
+oracle9_1340.elf: oracle9_1340.c
+	$(CC) $(CFLAGS) -o $@ $<

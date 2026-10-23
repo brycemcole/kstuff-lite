@@ -5,9 +5,10 @@ so text cannot be dumped and gadget offsets cannot be taken from a dump. This
 suite verifies them instead by *executing* each candidate gadget in kernel
 context and reading the trap-flag #DB frame it leaves behind.
 
-- `oracle/` — TF one-instruction oracle (`oracle3`–`oracle5`), the earlier
+- `oracle/` — TF one-instruction oracle (`oracle3`–`oracle9`), the earlier
   `tforacle`/`gadget_verify`/`bounce2` iterations, `timeline` (IDT-writer
-  watch), and `recover` (gate/TSS disarm + restore).
+  watch), and `recover` (gate/TSS disarm + restore). `oracle9` verifies the
+  upstream Byepervisor-Reborn 13.40 gadget chain.
 - `census/` — IDT/TSS layout census payloads (vector geometry, IST slots,
   mpvec, swapgs) plus `probe`/`text_read` diagnostics.
 - `13_40.h` — verified-vs-unproven offsets. Oracle-verified: `ADD_RSP_IRET`
